@@ -118,6 +118,7 @@ def main():
     news = None
     if not a.no_news_filter:
         news = pd.read_csv(cfg["news_file"])
+        news.columns = news.columns.str.strip().str.lower()
     out = Path("results")
     out.mkdir(exist_ok=True)
     summary = []
