@@ -45,7 +45,7 @@ def get_day(sym, day, raw_dir):
             cache.write_bytes(data)
             return data
         except requests.RequestException:
-            time.sleep(2 * (attempt + 1))
+            time.sleep(5 * (attempt + 1))
     print(f"  failed: {sym} {day}")
     return b""
 
@@ -64,9 +64,9 @@ def parse_day(data, day, sym):
 
 
 def fetch_symbol(sym, start, end, raw_dir):
-    days = [start + timedelta(days=i) for i in range((end - start).days + 1)]
+    days = [start + timedelta(days=i) for i in range(-1, (end - start).days + 1)]
     days = [d for d in days if d.weekday() != 5]  # no Saturday files
-    with ThreadPoolExecutor(max_workers=6) as ex:
+    with ThreadPoolExecutor(max_workers=2) as ex:
         blobs = list(ex.map(lambda d: get_day(sym, d, raw_dir), days))
     rows = []
     for d, b in zip(days, blobs):
