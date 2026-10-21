@@ -38,6 +38,13 @@ def main():
     days = len({r["date"] for r in rows})
     print(f"wrote {len(rows)} events on {days} days -> {cfg['output']}  (unparseable rows skipped: {skipped})")
     print(f"first {rows[0]['date']} {rows[0]['time']}  last {rows[-1]['date']} {rows[-1]['time']}")
+    per = {}
+    for r in rows:
+        per[r["date"][:7]] = per.get(r["date"][:7], 0) + 1
+    print("events per month: " + ", ".join(f"{m}:{n}" for m, n in sorted(per.items())))
+    for first, last in E.month_ranges(start, end):
+        if f"{first:%Y-%m}" not in per:
+            print(f"  WARNING: no events at all for {first:%Y-%m}. Do not trust results for that month.")
 
 
 if __name__ == "__main__":
