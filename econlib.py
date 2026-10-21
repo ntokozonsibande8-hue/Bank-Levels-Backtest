@@ -149,38 +149,47 @@ def _openbb_range(obb, sub, first, last):
     return json.loads(df.reset_index().to_json(orient="records", date_format="iso"))
 
 
+AUTH_HINTS = ("401", "402", "403", "unauthorized", "forbidden", "api key", "apikey", "api_key", "credential", "invalid key")
+
+
 def fetch_openbb(first, last, key, sub):
-    """One month via obb.economy.calendar. If the provider says 'No record found' for the whole month,
-    retry week by week and keep whatever comes back. (pip install openbb openbb-economy ...)"""
+    """One month via obb.economy.calendar. If the provider errors or returns nothing for the span, the span is split
+    in halves (down to single days) and whatever works is kept. Key / permission errors stop the run at once.
+    Sets fetch_openbb.incomplete = True when any day could not be fetched (such months are not cached)."""
     try:
         from openbb import obb
     except ImportError:
         raise SystemExit("OpenBB is not installed. Run: pip install openbb")
     if key:
         setattr(obb.user.credentials, f"{sub}_api_key", key)
+    failed = []
 
     def scrub(e):                                           # never echo the key
         msg = f"{type(e).__name__}: {e}"
         return msg.replace(key, "***") if key else msg
 
-    try:
-        return _openbb_range(obb, sub, first, last)
-    except Exception as e:
-        if "No record found" not in str(e):
-            raise SystemExit(f"OpenBB ({sub}): {scrub(e)[:300]}")
-    rows, empty, cur = [], 0, first
-    while cur <= last:
-        stop = min(cur + timedelta(days=6), last)
+    def span(a, b):
         try:
-            rows += _openbb_range(obb, sub, cur, stop)
+            return _openbb_range(obb, sub, a, b)
         except Exception as e:
-            if "No record found" not in str(e):
+            if any(h in str(e).lower() for h in AUTH_HINTS):
                 raise SystemExit(f"OpenBB ({sub}): {scrub(e)[:300]}")
-            empty += 1
-        cur = stop + timedelta(days=1)
-    print(f"  WARNING {first:%Y-%m}: whole-month request had no records; weekly retry got {len(rows)} rows "
-          f"({empty} empty weeks). Check this month.")
+            if a == b:
+                failed.append(a)
+                return []
+            mid = a + timedelta(days=(b - a).days // 2)
+            return span(a, mid) + span(mid + timedelta(days=1), b)
+
+    rows = span(first, last)
+    fetch_openbb.incomplete = bool(failed)
+    if failed:
+        days = ", ".join(d.isoformat() for d in failed[:8]) + (" ..." if len(failed) > 8 else "")
+        print(f"  WARNING {first:%Y-%m}: {len(failed)} day(s) returned nothing or errored ({days}); kept {len(rows)} rows. "
+              f"Weekends are normal; weekdays are not.")
     return rows
+
+
+fetch_openbb.incomplete = False
 
 
 def make_openbb_normaliser(tz_name="UTC"):
@@ -228,7 +237,8 @@ def raw_events(provider, start, end, key, raw_dir, cfg):
             continue
         data = fetch(first, last, key)
         print(f"  {first:%Y-%m}: {len(data)} rows")
-        if last < date.today() and data:             # the current month still changes; empty months are retried
+        incomplete = provider.startswith("openbb_") and fetch_openbb.incomplete
+        if last < date.today() and data and not incomplete:   # current month still changes; gaps are retried next run
             cache.parent.mkdir(parents=True, exist_ok=True)
             cache.write_text(json.dumps(data))
         rows += data
