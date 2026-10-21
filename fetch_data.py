@@ -79,6 +79,7 @@ def fetch_symbol(sym, start, end, raw_dir):
     df = pd.DataFrame(rows, columns=["t", "open", "high", "low", "close"]).set_index("t").sort_index()
     df.index = df.index.tz_convert(SAST).tz_localize(None)
     h1 = df.resample("1h").agg({"open": "first", "high": "max", "low": "min", "close": "last"}).dropna()
+    h1 = h1[h1.index.dayofweek < 5]  # keep Monday to Friday (SAST) only
     h1.index.name = "time_sast"
     out = Path("data") / f"{sym}.csv"
     h1.to_csv(out)
