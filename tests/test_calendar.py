@@ -155,25 +155,57 @@ def test_national_euro_events_get_country_prefix():
     assert texts == ["EUR CPI", "EUR German CPI YoY"]          # only the euro-area one matches the rule "EUR CPI"
 
 
-def test_openbb_weekly_fallback_when_month_has_no_record():
+def _stand_in(raise_for):
     import types, pandas as pd
     class Cal:
         def __init__(self, df): self.df = df
         def to_df(self): return self.df
     class Eco:
         def calendar(self, start_date, end_date, provider):
-            if (start_date, end_date) == ("2025-08-01", "2025-08-31"):
-                raise RuntimeError("[Error] -> Nasdaq Error -> Economic Events Calendar: No record found.")
-            if start_date == "2025-08-08":
-                raise RuntimeError("No record found.")
+            err = raise_for(start_date, end_date)
+            if err:
+                raise RuntimeError(err)
             return Cal(pd.DataFrame({"date": [start_date + " 13:30:00"], "country": ["united_states"], "event": ["PPI"], "importance": ["low"]}))
     obb = types.SimpleNamespace(economy=Eco(), user=types.SimpleNamespace(credentials=types.SimpleNamespace()))
     sys.modules["openbb"] = types.SimpleNamespace(obb=obb)
+
+
+def test_openbb_splits_a_failing_month_and_keeps_good_days():
+    # whole month and any span that includes 2025-11-12 fail with the 'returned empty' message
+    def bad(a, b):
+        if a <= "2025-11-12" <= b:
+            return "[Error] -> There was an error with the request and it was returned empty."
+    _stand_in(bad)
     try:
-        recs = E.fetch_openbb(date(2025, 8, 1), date(2025, 8, 31), "", "nasdaq")
+        recs = E.fetch_openbb(date(2025, 11, 1), date(2025, 11, 30), "", "nasdaq")
+        incomplete = E.fetch_openbb.incomplete
     finally:
         del sys.modules["openbb"]
-    assert [r["date"][:10] for r in recs] == ["2025-08-01", "2025-08-15", "2025-08-22", "2025-08-29"]
+    days = {r["date"][:10] for r in recs}
+    # the stand-in returns one row per successful span, dated at the span start: spans around the bad day survive
+    assert days == {"2025-11-01", "2025-11-09", "2025-11-11", "2025-11-13", "2025-11-16"}
+    assert "2025-11-12" not in days and incomplete is True
+
+
+def test_openbb_clean_month_is_not_incomplete():
+    _stand_in(lambda a, b: None)
+    try:
+        E.fetch_openbb(date(2025, 3, 1), date(2025, 3, 31), "", "nasdaq")
+        assert E.fetch_openbb.incomplete is False
+    finally:
+        del sys.modules["openbb"]
+
+
+def test_openbb_auth_error_stops_the_run():
+    _stand_in(lambda a, b: "401 Unauthorized: invalid API key")
+    try:
+        try:
+            E.fetch_openbb(date(2025, 3, 1), date(2025, 3, 31), "SECRET", "fmp")
+            assert False, "should have stopped"
+        except SystemExit as e:
+            assert "SECRET" not in str(e) and "401" in str(e)
+    finally:
+        del sys.modules["openbb"]
 
 
 if __name__ == "__main__":
