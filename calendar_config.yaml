@@ -20,5 +20,5 @@ jsonfile:
 
 # Only for provider: openbb  (needs: pip install openbb)
 openbb:
-  provider: fmp          # fmp | nasdaq | tradingeconomics  (nasdaq needs no key; the others need CALENDAR_API_KEY)
+  provider: nasdaq          # fmp | nasdaq | tradingeconomics  (nasdaq needs no key; the others need CALENDAR_API_KEY)
   tz: UTC                # timezone of the 'date' values OpenBB returns; check on a few known releases
