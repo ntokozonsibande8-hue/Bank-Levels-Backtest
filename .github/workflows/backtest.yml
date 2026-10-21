@@ -4,7 +4,7 @@ on:
 jobs:
   backtest:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -12,12 +12,19 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - run: python tests/test_engine.py
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         with:
           path: data/raw
           key: dukascopy-raw-${{ github.run_id }}
           restore-keys: dukascopy-raw-
-      - run: python fetch_data.py --config config.yaml --start 2026-01-01 --end 2026-09-30
+      - name: Fetch data (stops after 40 minutes, keeps progress)
+        continue-on-error: true
+        run: timeout 40m python fetch_data.py --config config.yaml --start 2026-07-01 --end 2026-09-30
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: data/raw
+          key: dukascopy-raw-${{ github.run_id }}
       - run: python backtest.py --config config.yaml
       - uses: actions/upload-artifact@v4
         with:
