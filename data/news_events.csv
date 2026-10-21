@@ -20130,8 +20130,8 @@ date,time,currency,event,impact,raw_event
 2026-10-01,10:30,USD,Core PCE Price Index,low,Core PCE Price Index
 2026-10-01,10:30,USD,Core PCE Price Index,low,Core PCE Prices
 2026-10-01,10:30,USD,Corporate Profits,low,Corporate Profits
-2026-10-01,10:30,USD,GDP,low,GDP
 2026-10-01,10:30,USD,GDP,low,GDP Sales
+2026-10-01,10:30,USD,GDP,low,GDP
 2026-10-01,10:30,USD,GDP,low,GDP Price Index
 2026-10-01,10:30,USD,Goods Trade Balance,low,Goods Trade Balance
 2026-10-01,10:30,USD,PCE Price index,low,PCE Price index
@@ -20209,9 +20209,9 @@ date,time,currency,event,impact,raw_event
 2026-10-02,10:30,USD,Continuing Jobless Claims,low,Continuing Jobless Claims
 2026-10-02,10:30,USD,Initial Jobless Claims,low,Initial Jobless Claims
 2026-10-02,10:30,USD,Jobless Claims 4-Week Avg.,low,Jobless Claims 4-Week Avg.
-2026-10-02,11:05,USD,FOMC Member Speaks,low,FOMC Member Barkin Speaks
 2026-10-02,11:05,USD,FOMC Member Speaks,low,Fed Collins Speaks
 2026-10-02,11:05,USD,FOMC Member Speaks,low,Fed Schmid Speaks
+2026-10-02,11:05,USD,FOMC Member Speaks,low,FOMC Member Barkin Speaks
 2026-10-02,11:30,CAD,S&P Global Manufacturing PMI,low,S&P Global Manufacturing PMI
 2026-10-02,11:30,EUR,ECB President Lagarde Speaks,low,ECB President Lagarde Speaks
 2026-10-02,11:45,USD,S&P Global Manufacturing PMI,low,S&P Global Manufacturing PMI
@@ -20232,8 +20232,8 @@ date,time,currency,event,impact,raw_event
 2026-10-02,17:00,USD,FOMC Member Speaks,low,FOMC Member Bowman Speaks
 2026-10-02,17:00,USD,Total Vehicle Sales,low,Total Vehicle Sales
 2026-10-02,17:05,CAD,BoC Senior Deputy Governor Rogers Speaks,low,BoC Senior Deputy Governor Rogers Speaks
-2026-10-02,17:30,USD,FOMC Member Speaks,low,FOMC Member Williams Speaks
 2026-10-02,17:30,USD,FOMC Member Speaks,low,Fed Governor Cook Speaks
+2026-10-02,17:30,USD,FOMC Member Speaks,low,FOMC Member Williams Speaks
 2026-10-02,18:30,USD,Fed's Balance Sheet,low,Fed's Balance Sheet
 2026-10-02,18:30,USD,Reserve Balances with Federal Reserve Banks,low,Reserve Balances with Federal Reserve Banks
 2026-10-02,20:45,USD,FOMC Member Speaks,low,Fed Logan Speaks
@@ -20559,11 +20559,11 @@ date,time,currency,event,impact,raw_event
 2026-10-16,10:30,USD,NY Empire State Manufacturing Index,low,NY Empire State Manufacturing Index
 2026-10-16,10:30,USD,PPI,low,PPI
 2026-10-16,10:30,USD,PPI ex. Food/Energy/Transport,low,PPI ex. Food/Energy/Transport
-2026-10-16,10:30,USD,Philadelphia Fed,low,Philly Fed New Orders
-2026-10-16,10:30,USD,Philadelphia Fed,low,Philly Fed Employment
-2026-10-16,10:30,USD,Philadelphia Fed,low,Philly Fed CAPEX Index
-2026-10-16,10:30,USD,Philadelphia Fed,low,Philly Fed Business Conditions
 2026-10-16,10:30,USD,Philadelphia Fed,low,Philadelphia Fed Manufacturing Index
+2026-10-16,10:30,USD,Philadelphia Fed,low,Philly Fed Business Conditions
+2026-10-16,10:30,USD,Philadelphia Fed,low,Philly Fed CAPEX Index
+2026-10-16,10:30,USD,Philadelphia Fed,low,Philly Fed Employment
+2026-10-16,10:30,USD,Philadelphia Fed,low,Philly Fed New Orders
 2026-10-16,10:30,USD,Philadelphia Fed,low,Philly Fed Prices Paid
 2026-10-16,10:30,USD,Retail Control,low,Retail Control
 2026-10-16,10:30,USD,Retail Sales,low,Retail Sales
