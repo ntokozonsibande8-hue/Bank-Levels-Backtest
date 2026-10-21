@@ -25,7 +25,7 @@ jobs:
         with:
           path: data/raw
           key: dukascopy-raw-${{ github.run_id }}
-      - run: python backtest.py --config config.yaml
+      - run: python backtest.py --config config.yaml --no-news-filter
       - uses: actions/upload-artifact@v4
         with:
           name: results
