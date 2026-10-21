@@ -7,23 +7,8 @@ rules_file: rules.yaml
 # window: AS = 00:00-07:00, AR = 00:00-10:00 (H1 candles)
 # symbols use Dukascopy codes; each needs data/<SYMBOL>.csv (made by fetch_data.py or your own export)
 markets:
-  currencies:
-    rules: currencies
-    window: AS
-    symbols: [EURUSD, GBPUSD, USDJPY]
-  ger40:
-    rules: ger40
-    window: AS
-    symbols: [DEUIDXEUR]
-  uk100:
-    rules: uk100
-    window: AS
-    symbols: [GBRIDXGBP]
   us30:
     rules: us30
     window: AR
     symbols: [USA30IDXUSD]
-  nasdaq:
-    rules: nasdaq
-    window: AR
-    symbols: [USATECHIDXUSD]
+
