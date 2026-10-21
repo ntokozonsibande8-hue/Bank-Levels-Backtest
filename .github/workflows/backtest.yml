@@ -19,7 +19,7 @@ jobs:
           restore-keys: dukascopy-raw-
       - name: Fetch data (stops after 40 minutes, keeps progress)
         continue-on-error: true
-        run: timeout 40m python fetch_data.py --config config.yaml --start 2026-07-01 --end 2026-09-30
+        run: timeout 40m python fetch_data.py --config config.yaml --start 2026-09-01 --end 2026-09-30
       - uses: actions/cache/save@v4
         if: always()
         with:
