@@ -39,6 +39,16 @@ def to_sast(dt):
     return dt.astimezone(SAST)
 
 
+NATIONAL_PREFIX = {"de": "German", "germany": "German", "fr": "French", "france": "French",
+                   "it": "Italian", "italy": "Italian", "es": "Spanish", "spain": "Spanish"}
+
+
+def national_prefix(country, currency):
+    if currency.upper() != "EUR":
+        return ""
+    return NATIONAL_PREFIX.get(re.sub(r"[^a-z]", "", str(country or "").lower()), "")
+
+
 def clean(text):
     return re.sub(r"\s+", " ", str(text or "")).strip()
 
@@ -134,19 +144,43 @@ def make_jsonfile_normaliser(fields):
     return norm
 
 
+def _openbb_range(obb, sub, first, last):
+    df = obb.economy.calendar(start_date=first.isoformat(), end_date=last.isoformat(), provider=sub).to_df()
+    return json.loads(df.reset_index().to_json(orient="records", date_format="iso"))
+
+
 def fetch_openbb(first, last, key, sub):
-    """Calls obb.economy.calendar for one month and returns JSON-friendly records. (pip install openbb)"""
+    """One month via obb.economy.calendar. If the provider says 'No record found' for the whole month,
+    retry week by week and keep whatever comes back. (pip install openbb openbb-economy ...)"""
     try:
         from openbb import obb
     except ImportError:
         raise SystemExit("OpenBB is not installed. Run: pip install openbb")
     if key:
         setattr(obb.user.credentials, f"{sub}_api_key", key)
+
+    def scrub(e):                                           # never echo the key
+        msg = f"{type(e).__name__}: {e}"
+        return msg.replace(key, "***") if key else msg
+
     try:
-        df = obb.economy.calendar(start_date=first.isoformat(), end_date=last.isoformat(), provider=sub).to_df()
-    except Exception as e:                                   # OpenBB wraps provider errors; never echo the key
-        raise SystemExit(f"OpenBB ({sub}): {type(e).__name__}: {str(e).replace(key, '***')[:300] if key else str(e)[:300]}")
-    return json.loads(df.reset_index().to_json(orient="records", date_format="iso"))
+        return _openbb_range(obb, sub, first, last)
+    except Exception as e:
+        if "No record found" not in str(e):
+            raise SystemExit(f"OpenBB ({sub}): {scrub(e)[:300]}")
+    rows, empty, cur = [], 0, first
+    while cur <= last:
+        stop = min(cur + timedelta(days=6), last)
+        try:
+            rows += _openbb_range(obb, sub, cur, stop)
+        except Exception as e:
+            if "No record found" not in str(e):
+                raise SystemExit(f"OpenBB ({sub}): {scrub(e)[:300]}")
+            empty += 1
+        cur = stop + timedelta(days=1)
+    print(f"  WARNING {first:%Y-%m}: whole-month request had no records; weekly retry got {len(rows)} rows "
+          f"({empty} empty weeks). Check this month.")
+    return rows
 
 
 def make_openbb_normaliser(tz_name="UTC"):
@@ -194,7 +228,7 @@ def raw_events(provider, start, end, key, raw_dir, cfg):
             continue
         data = fetch(first, last, key)
         print(f"  {first:%Y-%m}: {len(data)} rows")
-        if last < date.today():                      # the current month still changes, so it is not cached
+        if last < date.today() and data:             # the current month still changes; empty months are retried
             cache.parent.mkdir(parents=True, exist_ok=True)
             cache.write_text(json.dumps(data))
         rows += data
@@ -215,10 +249,12 @@ def build_rows(raw, norm, start, end, aliases, min_impact="low", currencies=()):
             continue
         if IMPACT_RANK[e["impact"]] < IMPACT_RANK[min_impact] or (wanted and e["currency"] not in wanted):
             continue
+        pre = national_prefix(e.get("country"), e["currency"])
+        shown = f"{pre} {e['event']}" if pre and not e["event"].lower().startswith(pre.lower()) else e["event"]
         row = dict(date=local.strftime("%Y-%m-%d"), time=local.strftime("%H:%M"), currency=e["currency"],
-                   event=event_text_for_rules(e["currency"], e["event"], aliases), impact=e["impact"],
-                   raw_event=e["event"])
-        key = (row["date"], row["time"], row["currency"], row["raw_event"])
+                   event=shown if pre else event_text_for_rules(e["currency"], e["event"], aliases),
+                   impact=e["impact"], raw_event=e["event"])
+        key = (row["date"], row["time"], row["currency"], row["raw_event"], pre)
         if key not in seen:
             seen.add(key)
             out.append(row)
