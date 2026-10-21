@@ -17,7 +17,7 @@ jobs:
           path: data/raw
           key: dukascopy-raw-${{ github.run_id }}
           restore-keys: dukascopy-raw-
-      - run: python fetch_data.py --config config.yaml --start 2025-01-06 --end 2025-01-10
+      - run: python fetch_data.py --config config.yaml --start 2026-01-01 --end 2026-09-30
       - run: python backtest.py --config config.yaml
       - uses: actions/upload-artifact@v4
         with:
