@@ -1,0 +1,59 @@
+name: Fetch economic calendar
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "Start date (YYYY-MM-DD)"
+        default: "2024-07-01"
+      end:
+        description: "End date (YYYY-MM-DD)"
+        default: "2026-10-20"
+      provider:
+        description: "Data provider"
+        type: choice
+        options: [openbb, fmp, tradingeconomics, jsonfile]
+        default: openbb
+permissions:
+  contents: write
+jobs:
+  calendar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Install OpenBB
+        if: inputs.provider == 'openbb'
+        run: pip install openbb
+      - run: python tests/test_calendar.py
+      - uses: actions/cache/restore@v4
+        with:
+          path: data/raw_cal
+          key: calendar-raw-${{ github.run_id }}
+          restore-keys: calendar-raw-
+      - name: Fetch calendar
+        env:
+          CALENDAR_API_KEY: ${{ secrets.CALENDAR_API_KEY }}
+        run: python fetch_calendar.py --provider ${{ inputs.provider }} --start ${{ inputs.start }} --end ${{ inputs.end }}
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: data/raw_cal
+          key: calendar-raw-${{ github.run_id }}
+      - name: Coverage report
+        run: python coverage.py | tee coverage_report.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: calendar
+          path: |
+            data/news_events.csv
+            coverage_report.txt
+      - name: Save the CSV into the repo
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add data/news_events.csv
+          git diff --cached --quiet || (git commit -m "Update news_events.csv" && git push)
