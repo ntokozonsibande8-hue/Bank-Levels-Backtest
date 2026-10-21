@@ -30,12 +30,13 @@ def point(sym):
 
 def get_day(sym, day, raw_dir):
     cache = raw_dir / sym / f"{day}.bi5"
-    if cache.exists():
+    if cache.exists() and cache.stat().st_size > 0:
         return cache.read_bytes()
     url = URL.format(sym=sym, y=day.year, m=day.month - 1, d=day.day)  # month is 0-based in the URL
-    for attempt in range(4):
+    reason = ""
+    for attempt in range(6):
         try:
-            r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
+            r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=60)
             if r.status_code == 404:
                 data = b""
             else:
@@ -44,9 +45,10 @@ def get_day(sym, day, raw_dir):
             cache.parent.mkdir(parents=True, exist_ok=True)
             cache.write_bytes(data)
             return data
-        except requests.RequestException:
+        except requests.RequestException as e:
+            reason = str(e)[:120]
             time.sleep(5 * (attempt + 1))
-    print(f"  failed: {sym} {day}")
+    print(f"  failed: {sym} {day} ({reason})")
     return b""
 
 
