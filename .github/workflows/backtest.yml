@@ -1,6 +1,13 @@
 name: Bank levels backtest
 on:
   workflow_dispatch:
+    inputs:
+      start:
+        description: "Start date (YYYY-MM-DD)"
+        default: "2026-07-01"
+      end:
+        description: "End date (keep the same every run)"
+        default: "2026-10-20"
 jobs:
   backtest:
     runs-on: ubuntu-latest
@@ -18,8 +25,11 @@ jobs:
           key: dukascopy-raw-${{ github.run_id }}
           restore-keys: dukascopy-raw-
       - name: Fetch data (stops after 40 minutes, keeps progress)
-        continue-on-error: true
-        run: timeout 40m python fetch_data.py --config config.yaml --start 2026-09-01 --end 2026-09-30
+        run: |
+          set +e
+          timeout 40m python fetch_data.py --config config.yaml --start ${{ inputs.start }} --end ${{ inputs.end }}
+          echo "FETCH_EXIT=$?" >> "$GITHUB_ENV"
+          exit 0
       - uses: actions/cache/save@v4
         if: always()
         with:
@@ -34,3 +44,8 @@ jobs:
         with:
           name: data
           path: data/*.csv
+      - name: Fail if the download was incomplete
+        if: env.FETCH_EXIT != '0'
+        run: |
+          echo "Download stopped early (exit code $FETCH_EXIT). Run again to continue."
+          exit 1
