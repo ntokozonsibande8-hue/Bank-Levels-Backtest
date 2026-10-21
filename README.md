@@ -5,8 +5,9 @@ with dates and times in SAST (GMT+2). That file is exactly what the bank levels 
 It can be dropped into the Bank-Levels-Backtest repo (no file names clash) or used on its own.
 
 ## Setup (once)
-1. Get an API key from a calendar provider. `fmp` (Financial Modeling Prep) and `tradingeconomics` are built in.
-   Check that your plan includes the economic calendar AND history back to your start date.
+1. Default provider is `openbb` (`pip install openbb`), which wraps `fmp`, `nasdaq` and `tradingeconomics`; choose the one under
+   `openbb:` in `calendar_config.yaml`. `nasdaq` needs no key; `fmp` and `tradingeconomics` do. Direct `fmp` / `tradingeconomics`
+   calls are also built in. Check that your plan includes the economic calendar AND history back to your start date.
 2. In the GitHub repo: Settings > Secrets and variables > Actions > New repository secret.
    Name `CALENDAR_API_KEY`, value = your key. Never paste the key into a file or a chat.
 
@@ -29,7 +30,9 @@ If you already download calendar JSON (e.g. in DayTrade), put it in `data/manual
 `jsonfile:` in `calendar_config.yaml`, and run with `--provider jsonfile`.
 
 ## Notes
-- The two API providers were written from their public documentation without network access and are UNTESTED against
+- OpenBB's column names and time zone are assumed (date, country, event, importance, currency; times in UTC). Verify on a few
+  known releases (e.g. a US PPI should land at 15:30 SAST) and set `openbb.tz` if the times are off.
+- The API providers were written from their public documentation without network access and are UNTESTED against
   the live services. Everything else (time zones, name matching, CSV format, coverage) is covered by `tests/test_calendar.py`.
   Run a one-month fetch first and check the coverage report.
 - Impact filter: `min_impact: low` keeps everything, matching your DayTrade setting.

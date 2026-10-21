@@ -1,5 +1,5 @@
 # Economic calendar fetcher config. Output times are SAST (GMT+2).
-provider: fmp            # fmp | tradingeconomics | jsonfile   (can be overridden with --provider)
+provider: openbb         # openbb | fmp | tradingeconomics | jsonfile   (can be overridden with --provider)
 output: data/news_events.csv
 raw_dir: data/raw_cal    # monthly API responses are cached here
 min_impact: low          # low | medium | high  (your DayTrade rules include low, so keep "low")
@@ -17,3 +17,8 @@ jsonfile:
     event: event
     impact: impact
     country: country
+
+# Only for provider: openbb  (needs: pip install openbb)
+openbb:
+  provider: fmp          # fmp | nasdaq | tradingeconomics  (nasdaq needs no key; the others need CALENDAR_API_KEY)
+  tz: UTC                # timezone of the 'date' values OpenBB returns; check on a few known releases

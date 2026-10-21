@@ -20,6 +20,12 @@ COUNTRY_CCY = {
     "CH": "CHF", "Switzerland": "CHF", "CN": "CNY", "China": "CNY",
 }
 
+_CCY_NORM = {re.sub(r"[^a-z]", "", k.lower()): v for k, v in COUNTRY_CCY.items()}
+
+
+def ccy_from_country(country):
+    return _CCY_NORM.get(re.sub(r"[^a-z]", "", str(country or "").lower()), "")
+
 
 # ---------- time and names ----------
 def parse_dt(value, assume_tz=timezone.utc):
@@ -98,7 +104,7 @@ def fetch_fmp(first, last, key):
 
 
 def norm_fmp(r):
-    cur = (r.get("currency") or COUNTRY_CCY.get(str(r.get("country", "")), "")).upper()
+    cur = (r.get("currency") or ccy_from_country(r.get("country"))).upper()
     impact = str(r.get("impact") or "").lower()
     return dict(dt=parse_dt(r["date"]), currency=cur, event=clean(r.get("event")),
                 impact=impact if impact in IMPACT_RANK else "low", country=r.get("country", ""))
@@ -111,7 +117,7 @@ def fetch_tradingeconomics(first, last, key):
 
 
 def norm_tradingeconomics(r):
-    cur = (r.get("Currency") or COUNTRY_CCY.get(str(r.get("Country", "")), "")).upper()
+    cur = (r.get("Currency") or ccy_from_country(r.get("Country"))).upper()
     impact = {1: "low", 2: "medium", 3: "high"}.get(int(r.get("Importance") or 1), "low")
     return dict(dt=parse_dt(r["Date"]), currency=cur, event=clean(r.get("Event") or r.get("Category")),
                 impact=impact, country=r.get("Country", ""))
@@ -121,10 +127,45 @@ def make_jsonfile_normaliser(fields):
     tz = timezone.utc if str(fields.get("datetime_tz", "UTC")).upper() == "UTC" else SAST
 
     def norm(r):
-        cur = str(r.get(fields["currency"]) or COUNTRY_CCY.get(str(r.get(fields.get("country", "country"), "")), "")).upper()
+        cur = str(r.get(fields["currency"]) or ccy_from_country(r.get(fields.get("country", "country")))).upper()
         impact = str(r.get(fields.get("impact", "impact")) or "").lower()
         return dict(dt=parse_dt(r[fields["datetime"]], tz), currency=cur, event=clean(r.get(fields["event"])),
                     impact=impact if impact in IMPACT_RANK else "low", country="")
+    return norm
+
+
+def fetch_openbb(first, last, key, sub):
+    """Calls obb.economy.calendar for one month and returns JSON-friendly records. (pip install openbb)"""
+    try:
+        from openbb import obb
+    except ImportError:
+        raise SystemExit("OpenBB is not installed. Run: pip install openbb")
+    if key:
+        setattr(obb.user.credentials, f"{sub}_api_key", key)
+    try:
+        df = obb.economy.calendar(start_date=first.isoformat(), end_date=last.isoformat(), provider=sub).to_df()
+    except Exception as e:                                   # OpenBB wraps provider errors; never echo the key
+        raise SystemExit(f"OpenBB ({sub}): {type(e).__name__}: {str(e).replace(key, '***')[:300] if key else str(e)[:300]}")
+    return json.loads(df.reset_index().to_json(orient="records", date_format="iso"))
+
+
+def make_openbb_normaliser(tz_name="UTC"):
+    tz = timezone.utc if str(tz_name).upper() == "UTC" else SAST
+
+    def pick(r, *names):
+        for n in names:
+            if r.get(n) not in (None, ""):
+                return r[n]
+        return None
+
+    def norm(r):
+        raw_dt = str(pick(r, "date", "datetime", "time"))
+        cur = str(pick(r, "currency") or ccy_from_country(pick(r, "country"))).upper()
+        imp = str(pick(r, "importance", "impact") or "").lower()
+        imp = {"1": "low", "2": "medium", "3": "high"}.get(imp, imp)
+        return dict(dt=parse_dt(raw_dt[:19] if len(raw_dt) > 10 and "+" not in raw_dt and "Z" not in raw_dt else raw_dt, tz),
+                    currency=cur, event=clean(pick(r, "event", "category")),
+                    impact=imp if imp in IMPACT_RANK else "low", country=str(pick(r, "country") or ""))
     return norm
 
 
@@ -137,7 +178,14 @@ def raw_events(provider, start, end, key, raw_dir, cfg):
         j = cfg["jsonfile"]
         rows = json.loads(Path(j["path"]).read_text())
         return rows, make_jsonfile_normaliser(j["fields"])
-    fetch, norm = FETCHERS[provider]
+    if provider == "openbb":
+        o = cfg.get("openbb", {})
+        sub = o.get("provider", "fmp")
+        fetch = lambda f, l, k: fetch_openbb(f, l, k, sub)
+        norm = make_openbb_normaliser(o.get("tz", "UTC"))
+        provider = f"openbb_{sub}"                               # cache folder name
+    else:
+        fetch, norm = FETCHERS[provider]
     rows = []
     for first, last in month_ranges(start, end):
         cache = Path(raw_dir) / provider / f"{first:%Y-%m}.json"

@@ -111,6 +111,42 @@ def test_csv_works_with_backtest_matching(tmp_path=None):
     assert len(C.rule_hits(["USD Building Permits", "USD Initial Jobless Claims"], labels)) == 0   # "+" needs both
 
 
+def test_openbb_normaliser_handles_snake_case_country_and_date_only():
+    norm = E.make_openbb_normaliser("UTC")
+    r = rows_from([{"date": "2025-03-04T13:30:00.000", "country": "united_states", "event": "PPI MoM", "importance": "high", "currency": None}], norm=norm)[0]
+    assert (r["date"], r["time"], r["currency"], r["event"], r["impact"]) == ("2025-03-04", "15:30", "USD", "PPI", "high")
+    d = rows_from([{"date": "2025-03-04", "country": "euro_area", "event": "CPI YoY", "importance": None}], norm=norm)[0]
+    assert (d["date"], d["currency"], d["impact"]) == ("2025-03-04", "EUR", "low")
+    z = rows_from([{"date": "2025-03-04T13:30:00+00:00", "country": "US", "event": "x", "importance": 2}], norm=norm)[0]
+    assert z["impact"] == "medium" and z["time"] == "15:30"
+
+
+def test_fetch_openbb_with_a_stand_in_for_openbb():
+    import types, pandas as pd
+    calls = {}
+
+    class Cal:
+        def to_df(self):
+            return pd.DataFrame({"date": pd.to_datetime(["2025-03-04 13:30:00"]), "country": ["united_states"],
+                                 "event": ["PPI MoM"], "importance": ["high"]})
+
+    class Eco:
+        def calendar(self, **kw):
+            calls.update(kw)
+            return Cal()
+
+    obb = types.SimpleNamespace(economy=Eco(), user=types.SimpleNamespace(credentials=types.SimpleNamespace()))
+    sys.modules["openbb"] = types.SimpleNamespace(obb=obb)
+    try:
+        recs = E.fetch_openbb(date(2025, 3, 1), date(2025, 3, 31), "SECRET", "fmp")
+    finally:
+        del sys.modules["openbb"]
+    assert calls == {"start_date": "2025-03-01", "end_date": "2025-03-31", "provider": "fmp"}
+    assert obb.user.credentials.fmp_api_key == "SECRET" and recs[0]["event"] == "PPI MoM"
+    r = rows_from(recs, norm=E.make_openbb_normaliser())[0]
+    assert (r["date"], r["currency"]) == ("2025-03-04", "USD")
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

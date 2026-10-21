@@ -2,7 +2,7 @@
 
 Usage:
   export CALENDAR_API_KEY=...        (in GitHub: repo Settings > Secrets > Actions > CALENDAR_API_KEY)
-  python fetch_calendar.py --start 2024-07-01 --end 2026-10-20 [--provider fmp|tradingeconomics|jsonfile]
+  python fetch_calendar.py --start 2024-07-01 --end 2026-10-20 [--provider openbb|fmp|tradingeconomics|jsonfile]
 """
 import argparse
 import os
@@ -24,7 +24,8 @@ def main():
     cfg = yaml.safe_load(open(a.config))
     provider = a.provider or cfg["provider"]
     key = os.environ.get("CALENDAR_API_KEY", "")
-    if provider != "jsonfile" and not key:
+    needs_key = provider not in ("jsonfile",) and not (provider == "openbb" and cfg.get("openbb", {}).get("provider") == "nasdaq")
+    if needs_key and not key:
         raise SystemExit("CALENDAR_API_KEY is not set. Add it as a repository secret (never paste it in a file).")
     start, end = date.fromisoformat(a.start), date.fromisoformat(a.end)
     print(f"provider={provider} {start} -> {end} (SAST dates)")
