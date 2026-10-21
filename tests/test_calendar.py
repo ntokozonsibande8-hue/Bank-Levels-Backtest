@@ -147,6 +147,35 @@ def test_fetch_openbb_with_a_stand_in_for_openbb():
     assert (r["date"], r["currency"]) == ("2025-03-04", "USD")
 
 
+def test_national_euro_events_get_country_prefix():
+    raw = [{"date": "2025-03-04 09:00:00", "country": "Germany", "event": "CPI YoY", "importance": "high", "currency": "EUR"},
+           {"date": "2025-03-04 10:00:00", "country": "Euro Zone", "event": "CPI YoY", "importance": "high", "currency": "EUR"}]
+    rows = rows_from(raw, norm=E.make_openbb_normaliser())
+    texts = sorted(f"{r['currency']} {r['event']}" for r in rows)
+    assert texts == ["EUR CPI", "EUR German CPI YoY"]          # only the euro-area one matches the rule "EUR CPI"
+
+
+def test_openbb_weekly_fallback_when_month_has_no_record():
+    import types, pandas as pd
+    class Cal:
+        def __init__(self, df): self.df = df
+        def to_df(self): return self.df
+    class Eco:
+        def calendar(self, start_date, end_date, provider):
+            if (start_date, end_date) == ("2025-08-01", "2025-08-31"):
+                raise RuntimeError("[Error] -> Nasdaq Error -> Economic Events Calendar: No record found.")
+            if start_date == "2025-08-08":
+                raise RuntimeError("No record found.")
+            return Cal(pd.DataFrame({"date": [start_date + " 13:30:00"], "country": ["united_states"], "event": ["PPI"], "importance": ["low"]}))
+    obb = types.SimpleNamespace(economy=Eco(), user=types.SimpleNamespace(credentials=types.SimpleNamespace()))
+    sys.modules["openbb"] = types.SimpleNamespace(obb=obb)
+    try:
+        recs = E.fetch_openbb(date(2025, 8, 1), date(2025, 8, 31), "", "nasdaq")
+    finally:
+        del sys.modules["openbb"]
+    assert [r["date"][:10] for r in recs] == ["2025-08-01", "2025-08-15", "2025-08-22", "2025-08-29"]
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):
