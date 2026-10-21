@@ -1,0 +1,19 @@
+# Economic calendar fetcher config. Output times are SAST (GMT+2).
+provider: fmp            # fmp | tradingeconomics | jsonfile   (can be overridden with --provider)
+output: data/news_events.csv
+raw_dir: data/raw_cal    # monthly API responses are cached here
+min_impact: low          # low | medium | high  (your DayTrade rules include low, so keep "low")
+currencies: []           # empty = keep all; or e.g. [USD, EUR, GBP]
+aliases_file: aliases.yaml
+rules_file: rules.yaml   # used by coverage.py
+
+# Only for provider: jsonfile (e.g. a forex.com / Forex Factory JSON you already download)
+jsonfile:
+  path: data/manual/calendar.json
+  fields:                # change these to the field names in your JSON
+    datetime: date       # e.g. "2025-01-08 13:30:00"
+    datetime_tz: UTC     # timezone of that value: UTC or SAST
+    currency: currency
+    event: event
+    impact: impact
+    country: country

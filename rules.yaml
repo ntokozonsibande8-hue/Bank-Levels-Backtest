@@ -1,7 +1,6 @@
 # DayTrade news rules. Each rule is a list; a multi-item list means ALL releases must land on the same day ("+").
-# A release matches when "<CURRENCY> <event name>" from the calendar STARTS WITH the text here (case-insensitive).
+# A release matches when "<CURRENCY> <event name>" starts with the text here (case-insensitive).
 # If a trade rule and a don't-trade rule both fire on a day, don't trade wins.
-# X Three and HIGH IMPACT NEWS are not part of the bank levels backtest.
 currencies:
   trade:
     - ["USD Crude Oil Inventories"]

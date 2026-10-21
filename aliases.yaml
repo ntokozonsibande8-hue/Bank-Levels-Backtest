@@ -1,0 +1,37 @@
+# Maps the wording a data provider uses to the wording in rules.yaml.
+# "name" is the rules.yaml text (currency + event). "patterns" are case-insensitive regexes tried
+# against the provider's event name (only for events with that currency). First match wins.
+# These patterns are a starting guess: run coverage.py and add patterns where a rule shows 0 days.
+- {name: "USD ADP Nonfarm Employment", currency: USD, patterns: ['^ADP (Nonfarm )?Employment']}
+- {name: "USD Core PCE Price Index",    currency: USD, patterns: ['^Core PCE']}
+- {name: "USD PPI",                     currency: USD, patterns: ['^(PPI|Producer Price Index)\b(?!.*(Ex|Core))']}
+- {name: "USD FOMC Meeting Minutes",    currency: USD, patterns: ['^FOMC (Meeting )?Minutes']}
+- {name: "USD FOMC Member Speaks",      currency: USD, patterns: ['^(FOMC|Fed)\b.*\b(Speaks|Speech)\b']}
+- {name: "USD Fed Interest Rate Decision", currency: USD, patterns: ['^(Fed|FOMC)\b.*(Interest Rate|Rate Decision)', '^Interest Rate Decision']}
+- {name: "USD Building Permits",        currency: USD, patterns: ['^Building Permits']}
+- {name: "USD Manufacturing PMI (P)",   currency: USD, patterns: ['^(S&P Global )?Manufacturing PMI.*(Flash|\(P\)|Prel)']}
+- {name: "USD ISM Manufacturing PMI",   currency: USD, patterns: ['^ISM Manufacturing PMI']}
+- {name: "USD Crude Oil Inventories",   currency: USD, patterns: ['^(EIA )?Crude Oil (Inventories|Stocks Change)']}
+- {name: "USD API Weekly Crude Oil Stock", currency: USD, patterns: ['^API (Weekly )?Crude Oil Stock']}
+- {name: "USD Fed's Balance Sheet",     currency: USD, patterns: ["^Fed'?s? Balance Sheet"]}
+- {name: "USD EIA Short-Term Energy Outlook", currency: USD, patterns: ['^EIA Short[- ]Term Energy Outlook']}
+- {name: "USD Industrial Production",   currency: USD, patterns: ['^Industrial Production']}
+- {name: "USD Core CPI",                currency: USD, patterns: ['^Core (CPI|Inflation Rate)']}
+- {name: "USD Philadelphia Fed",        currency: USD, patterns: ['^(Philadelphia|Philly) Fed']}
+- {name: "USD Initial Jobless Claims",  currency: USD, patterns: ['^Initial Jobless Claims']}
+- {name: "USD GDP",                     currency: USD, patterns: ['^GDP\b']}
+- {name: "USD Pending Home Sales",      currency: USD, patterns: ['^Pending Home Sales']}
+- {name: "USD Core Retail Sales",       currency: USD, patterns: ['^Core Retail Sales']}
+- {name: "USD Retail Sales",            currency: USD, patterns: ['^Retail Sales\b(?!.*Ex)']}
+- {name: "USD Core Durable Goods Orders", currency: USD, patterns: ['^Core Durable Goods']}
+- {name: "USD Durable Goods Orders",    currency: USD, patterns: ['^Durable Goods Orders']}
+- {name: "USD Import Price Index",      currency: USD, patterns: ['^Import Price']}
+- {name: "EUR ECB President Lagarde Speaks", currency: EUR, patterns: ['Lagarde']}
+- {name: "EUR ECB Interest Rate Decision", currency: EUR, patterns: ['^ECB .*(Interest Rate|Rate Decision)', '^Interest Rate Decision']}
+- {name: "EUR CPI",                     currency: EUR, patterns: ['^(CPI|Inflation Rate)\b(?!.*(Core|Ex))']}
+- {name: "GBP CPI",                     currency: GBP, patterns: ['^(CPI|Inflation Rate)\b(?!.*(Core|Ex))']}
+- {name: "GBP GDP",                     currency: GBP, patterns: ['^GDP\b']}
+- {name: "GBP Manufacturing PMI",       currency: GBP, patterns: ['^(S&P Global/CIPS |S&P Global )?Manufacturing PMI']}
+- {name: "GBP Services PMI",            currency: GBP, patterns: ['^(S&P Global/CIPS |S&P Global )?Services PMI']}
+- {name: "GBP Composite PMI",           currency: GBP, patterns: ['^(S&P Global/CIPS |S&P Global )?Composite PMI']}
+- {name: "GBP Manufacturing Production", currency: GBP, patterns: ['^Manufacturing Production']}
